@@ -1,10 +1,7 @@
 import breeze.linalg._
-import breeze.linalg.shuffle
 import java.io.File
 import com.typesafe.scalalogging.Logger
 import scala.math
-import javax.sound.sampled.Line
-import breeze.stats.mode
 
 class LinearRegression() {
   private var _coeffs: DenseVector[Double] = DenseVector.ones[Double](1)
