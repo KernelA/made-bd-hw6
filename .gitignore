@@ -1,2 +1,10 @@
 *.class
 *.log
+
+.vscode/
+.metals/
+null/
+.bloop/
+project/
+target/
+!train_log/train.log
