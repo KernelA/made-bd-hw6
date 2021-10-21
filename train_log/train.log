@@ -1,0 +1,22 @@
+01:35:11.962 - Start cross validation
+01:35:11.969 - Cross validation 1 of 4
+01:35:12.130 - MSE error on train 6.595277159088354
+01:35:12.131 - MSE error on test 4.100271634757615
+01:35:12.132 - Cross validation 2 of 4
+01:35:12.147 - MSE error on train 6.630998979297002
+01:35:12.148 - MSE error on test 4.031917953742648
+01:35:12.148 - Cross validation 3 of 4
+01:35:12.159 - MSE error on train 6.842311362019217
+01:35:12.160 - MSE error on test 3.670038273727283
+01:35:12.160 - Cross validation 4 of 4
+01:35:12.167 - MSE error on train 6.77992088602632
+01:35:12.168 - MSE error on test 3.7865870914042166
+01:35:12.168 - Train on full data
+01:35:12.179 - true_alpha_1    = 0.295984           alpha_1    = 0.354091          
+01:35:12.180 - true_alpha_2    = 0.746556           alpha_2    = 0.728629          
+01:35:12.180 - true_alpha_3    = 0.277183           alpha_3    = 0.254907          
+01:35:12.181 - true_alpha_4    = 0.635574           alpha_4    = 0.571015          
+01:35:12.182 - true_alpha_5    = 0.927358           alpha_5    = 0.852594          
+01:35:12.182 - true_alpha_6    = 0.107549           alpha_6    = 0.044059          
+01:35:12.183 - true_b = 10.000000          b = 10.105360         
+01:35:12.189 - Save prediction on test
