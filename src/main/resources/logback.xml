@@ -14,8 +14,11 @@
         </encoder>
     </appender>
 
-    <root level="debug">
-        <appender-ref ref="STDOUT" />
+    <root level="info">
         <appender-ref ref="FILE" />
     </root>
+
+    <logger name="linreg" level="info">
+        <appender-ref ref="STDOUT" />
+    </logger>
 </configuration>

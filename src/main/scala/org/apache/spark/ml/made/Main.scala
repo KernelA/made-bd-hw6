@@ -1,33 +1,10 @@
+package org.apache.spark.ml.made
+
 import breeze.linalg._
-import java.io.File
 import com.typesafe.scalalogging.Logger
-import scala.math
+import org.apache.spark.sql.SparkSession
 
-class LinearRegression() {
-  private var _coeffs: DenseVector[Double] = DenseVector.ones[Double](1)
 
-  def coeffs = _coeffs(0 until _coeffs.length - 1)
-
-  def shift = _coeffs(-1)
-
-  def fit(
-      trainFeatures: DenseMatrix[Double],
-      target: DenseVector[Double]
-  ) = {
-    val newFeatures =
-      DenseMatrix.horzcat(trainFeatures, DenseMatrix.ones[Double](trainFeatures.rows, 1))
-    this._coeffs = (pinv(newFeatures) * target.asDenseMatrix.t).toDenseVector
-  }
-
-  def predict(
-      testFeatures: DenseMatrix[Double]
-  ): DenseVector[Double] = {
-    val newFeatures =
-      DenseMatrix.horzcat(testFeatures, DenseMatrix.ones[Double](testFeatures.rows, 1))
-
-    return (newFeatures * this._coeffs.asDenseMatrix.t).toDenseVector
-  }
-}
 
 class CrossVal(cv: Int) {
 
@@ -122,46 +99,36 @@ object Main extends App {
 
     return optIndex
   }
+//
+//  def readMatrix(filepath: String): DenseMatrix[Double] = {
+//    return csvread(new File(filepath), skipLines = 1)
+//  }
 
-  def readMatrix(filepath: String): DenseMatrix[Double] = {
-    return csvread(new File(filepath), skipLines = 1)
-  }
+//  if (args.length != 8) {
+//    println(
+//      "Please specify arguments as --train file --test file --out path_to_out --true path_to_true_values"
+//    )
+//    java.lang.System.exit(1)
+//  }
 
-  if (args.length != 8) {
-    println(
-      "Please specify arguments as --train file --test file --out path_to_out --true path_to_true_values"
-    )
-    java.lang.System.exit(1)
-  }
+  var logger = Logger("linreg")
 
-  var logger = Logger("Main")
+  val spark = SparkSession.builder
+    .appName("Word count")
+    .config("spark.driver.cores", 2)
+    .config("spark.driver.memory", 6)
+    .master("local[2]")
+    .getOrCreate()
 
-  val trainOptIndex = findOpt(args, "--train")
-  val testOptIndex = findOpt(args, "--test")
-  val outOptIndex = findOpt(args, "--out")
-  val trueOptIndex = findOpt(args, "--true")
+  val data = spark.sparkContext.parallelize(
+    Seq("I like Spark", "Spark is awesome", "My first Spark job is working now and is counting these words"))
 
-  val trainFeaturesTarget = readMatrix(args(trainOptIndex + 1))
+  val wordCounts = data
+    .flatMap(row => row.split(" "))
+    .map(word => (word, 1))
+    .reduceByKey(_ + _)
 
-  val (trainFeatures, trainTarget) = FeaturePreprocessing.splitFeatureTarget(trainFeaturesTarget)
+  wordCounts.foreach(println)
 
-  var crossValid = new CrossVal(4)
-
-  val model = crossValid.fit(trainFeatures, trainTarget)
-
-  val trueCoeffs = readMatrix(args(trueOptIndex + 1)).toDenseVector
-
-  model.coeffs.mapPairs((index, value) =>
-    logger.info(
-      f"true_alpha_${index + 1}%-4d = ${trueCoeffs(index)}%-18f alpha_${index + 1}%-4d = ${value}%-18f"
-    )
-  )
-  logger.info(f"true_b = ${trueCoeffs(-1)}%-18f b = ${model.shift}%-18f")
-
-  val testFeatures = readMatrix(args(testOptIndex + 1))
-  val predictedTest = model.predict(testFeatures)
-
-  logger.info("Save prediction on test")
-  csvwrite(new File(args(outOptIndex + 1)), predictedTest.asDenseMatrix.t)
-
+  spark.stop()
 }
