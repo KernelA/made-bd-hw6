@@ -1,5 +1,7 @@
 # HW 5 Spark Линейная регрессия на Scala
 
+
+
 [Описание задания (129 слайд)](https://github.com/netcitizenrus/MADE_BigData_2021/blob/540e164ecc574b52ca6ffa40636b8728af28aa80/SparkML/Distiributed.pdf)
 
 
@@ -10,6 +12,10 @@
 ## Резлультаты запуска тестов
 
 [Лог](report/test.log)
+
+Также тесты запускаются в GitHub Actions. См. badge ниже со статусом:
+
+[![CI](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml)
 
 ## Реализация
 
