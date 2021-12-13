@@ -1,9 +1,9 @@
 package org.apache.spark.ml.made
 
-import org.scalatest._
-import flatspec._
-import matchers._
 import org.apache.spark.sql.SparkSession
+import org.scalatest._
+import org.scalatest.flatspec._
+import org.scalatest.matchers._
 
 class StartSparkTest extends AnyFlatSpec with should.Matchers {
 

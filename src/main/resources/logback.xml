@@ -20,5 +20,11 @@
 
     <logger name="linreg" level="info">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <logger name="main" level="info">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
     </logger>
 </configuration>

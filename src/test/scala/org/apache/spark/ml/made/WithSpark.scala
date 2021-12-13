@@ -10,7 +10,7 @@ trait WithSpark {
 object WithSpark {
         lazy val _spark = SparkSession.builder
           .appName("Test context")
-          .master("local[2]")
+          .master(s"local[${Constants.NUM_CORES}]")
           .getOrCreate()
 
         lazy val _sqlc = _spark.sqlContext
