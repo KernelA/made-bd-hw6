@@ -13,3 +13,5 @@ target/
 .bsp/
 
 train_log/
+!report/main.log
+!report/test.log
