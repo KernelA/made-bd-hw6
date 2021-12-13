@@ -1,0 +1,8 @@
+00:44:24.189 - Iter 0 / 5000 Squared norm of the gradient: 10388.356438354214
+00:45:02.021 - Iter 100 / 5000 Squared norm of the gradient: 2.6712615926522234E-4
+00:45:29.003 - Iter 200 / 5000 Squared norm of the gradient: 1.0744369444251852E-8
+00:45:54.626 - Max abs diff: [4.074073193735539E-8]
+00:45:54.628 - true_value_1    = 1.500000           est_value_1    = 1.500000          
+00:45:54.629 - true_value_2    = 0.300000           est_value_2    = 0.300000          
+00:45:54.630 - true_value_3    = -0.700000          est_value_3    = -0.700000         
+00:45:54.630 - true_b = 0.000000           est_b = 0.000000          
