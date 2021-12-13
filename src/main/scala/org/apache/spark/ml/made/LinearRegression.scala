@@ -60,7 +60,6 @@ trait LinearRegressionParams extends HasFeaturesCol with HasLabelCol with HasOut
   setDefault(printEvery -> 20)
 
   protected def validateAndTransformSchema(schema: StructType): StructType = {
-    SchemaUtils.checkNumericType(schema, getFeaturesCol)
     SchemaUtils.checkNumericType(schema, getLabelCol)
 
     if (schema.fieldNames.contains($(outputCol))) {
