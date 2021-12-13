@@ -9,7 +9,18 @@ import breeze.stats.distributions.Rand
 import org.apache.spark.ml.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.ml.param.{DoubleParam, IntParam, Param, ParamMap}
 import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol, HasOutputCol}
-import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsReader, DefaultParamsWritable, DefaultParamsWriter, Identifiable, MLReadable, MLReader, MLWritable, MLWriter, SchemaUtils}
+import org.apache.spark.ml.util.{
+  DefaultParamsReadable,
+  DefaultParamsReader,
+  DefaultParamsWritable,
+  DefaultParamsWriter,
+  Identifiable,
+  MLReadable,
+  MLReader,
+  MLWritable,
+  MLWriter,
+  SchemaUtils
+}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{DataFrame, Dataset, Encoder}
 import org.apache.spark.sql.types.StructType
@@ -27,7 +38,7 @@ trait LinearRegressionParams extends HasFeaturesCol with HasLabelCol with HasOut
   val eps =
     new DoubleParam(this, "gradientNorm", "The squared norm of a gradient for stopping condition.")
 
-  val printEvery = new IntParam(this, "printEvery",  "Print progress at each n-th iteration")
+  val printEvery = new IntParam(this, "printEvery", "Print progress at each n-th iteration")
 
   def getLearningRate(): Double = $(learningRate)
 

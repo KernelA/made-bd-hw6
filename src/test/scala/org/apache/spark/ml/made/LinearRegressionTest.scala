@@ -10,7 +10,11 @@ import org.scalatest.matchers.should
 import com.google.common.io.Files
 import com.github.mrpowers.spark.fast.tests.DatasetComparer
 
-class LinearRegressionTest extends AnyFlatSpec with should.Matchers with WithSpark with DatasetComparer {
+class LinearRegressionTest
+    extends AnyFlatSpec
+    with should.Matchers
+    with WithSpark
+    with DatasetComparer {
   lazy val featuresWithTarget: DataFrame = LinearRegressionTest._featuresDt
 
   lazy val model: DenseVector[Double] = LinearRegressionTest._model
@@ -75,7 +79,8 @@ class LinearRegressionTest extends AnyFlatSpec with should.Matchers with WithSpa
     val pipeline = new Pipeline().setStages(
       Array(
         new LinearRegression()
-          .setOutputCol("predicted").setNumIter(10)
+          .setOutputCol("predicted")
+          .setNumIter(10)
       )
     )
 
@@ -87,8 +92,10 @@ class LinearRegressionTest extends AnyFlatSpec with should.Matchers with WithSpa
 
     val reRead: PipelineModel = PipelineModel.load(tmpFolder.getAbsolutePath)
 
-    val transformed = model.stages(0).asInstanceOf[LinearRegressionModel].transform(featuresWithTarget)
-    val transformedReRead = reRead.stages(0).asInstanceOf[LinearRegressionModel].transform(featuresWithTarget)
+    val transformed =
+      model.stages(0).asInstanceOf[LinearRegressionModel].transform(featuresWithTarget)
+    val transformedReRead =
+      reRead.stages(0).asInstanceOf[LinearRegressionModel].transform(featuresWithTarget)
 
     assertSmallDatasetEquality(transformed, transformedReRead)
   }
