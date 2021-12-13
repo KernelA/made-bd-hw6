@@ -9,25 +9,19 @@ on:
       - master
       - develop
   workflow_dispatch:
-    
-
 
 jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup JDK
-      uses: actions/setup-java@v2
-      with:
-        distribution: adopt 
-        java-version: 11
+      - name: Setup JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: 11
 
-    - uses: beyondstorage/setup-hdfs@master
-      with:
-        hdfs-version: '3.2.2'
-
-    - name: Build and Test
-      run: sbt test
+      - name: Build and Test
+        run: sbt test
