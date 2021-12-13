@@ -14,17 +14,26 @@
         </encoder>
     </appender>
 
+    <appender name="FILEMain" class="ch.qos.logback.core.FileAppender">
+        <!-- path to your log file, where you want to store logs -->
+        <file>train_log/main.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <root level="info">
         <appender-ref ref="FILE" />
     </root>
 
     <logger name="linreg" level="info">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILEMain" />
     </logger>
 
     <logger name="main" level="info">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILEMain" />
     </logger>
 </configuration>
