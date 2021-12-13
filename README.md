@@ -1,31 +1,38 @@
-# HW 3 Линейная регрессия на Scala
+# HW 5 Spark Линейная регрессия на Scala
 
-[Описание задания](https://github.com/netcitizenrus/MADE_BigData_2021/blob/3a0272a6cb3d8ea626e360668fbeaa1c794b5163/HW3_Scala.pdf)
 
-Реализована простая линейная регрессия на основе МНК без регуляризации.
 
-## Данные
+[Описание задания (129 слайд)](https://github.com/netcitizenrus/MADE_BigData_2021/blob/540e164ecc574b52ca6ffa40636b8728af28aa80/SparkML/Distiributed.pdf)
 
-Данные были синтетически сгенерированы для простой проверки насколько алгоритм правильно работает. К правильным результатам был добавлен шум.
 
-* [train](data/train.csv)
-* [test](data/test.csv)
-* [Предсказание на test](data/predicted.csv)
-* [Настоящие значения параметров линейно модели](data/true_coeff.csv)
+## Результат работы
 
-## Результат обучения
+[Логи обучения](report/main.log)
 
-[Логи обучения с расчётом ошибок на train в ходе кросс-валидации](train_log/train.log)
+## Резлультаты запуска тестов
+
+[Лог](report/test.log)
+
+Также тесты запускаются в GitHub Actions. См. badge ниже со статусом:
+
+[![CI](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml)
 
 ## Реализация
 
-[Реализация линейной регрессии](src/main/scala/Main.scala)
+[Реализация линейной регрессии](src/main/scala/org/apache/spark/ml/made/LinearRegression.scala)
 
 ## Как запустить:
 
 Установить SBЕ и Java.
 
+На Windows необходимо установить [Hadoop и HDFS](https://towardsdatascience.com/installing-hadoop-3-2-1-single-node-cluster-on-windows-10-ac258dd48aef)
+
 Выполнить команду:
 ```
-sbt "run --train ./data/train.csv --test ./data/test.csv --out ./data/predicted.csv --true ./data/true_coeff.csv"
+sbt run
+```
+
+Запуск тестов:
+```
+sbt test
 ```

@@ -8,3 +8,8 @@ null/
 project/
 target/
 !train_log/train.log
+
+.idea/
+.bsp/
+
+train_log/
