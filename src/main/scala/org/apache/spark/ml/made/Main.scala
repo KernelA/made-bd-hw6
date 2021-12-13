@@ -1,92 +1,14 @@
 package org.apache.spark.ml.made
 
 import breeze.linalg._
+import breeze.stats.distributions.RandBasis
 import com.typesafe.scalalogging.Logger
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
-
-
-class CrossVal(cv: Int) {
-
-  def fit(trainFeatures: DenseMatrix[Double], target: DenseVector[Double]): LinearRegression = {
-
-    var logger = Logger("Main")
-
-    var indices = Range(0, trainFeatures.rows).toArray
-    indices = shuffle(indices)
-
-    val shuffledRows =
-      indices.map(index => trainFeatures(index, ::).t.toArray).flatMap(_.toList).toArray
-
-    val shuffledTarget = new DenseVector[Double](indices.map(index => target(index)))
-
-    val newFeatures = DenseMatrix.create(
-      trainFeatures.rows,
-      trainFeatures.cols,
-      shuffledRows,
-      0,
-      trainFeatures.cols,
-      true
-    )
-
-    val blockSize = trainFeatures.rows / cv
-
-    logger.info("Start cross validation")
-
-    for (cvBlock <- 0 to cv - 1) {
-      logger.info(f"Cross validation ${cvBlock + 1} of ${cv}")
-      val startTestIndex = cvBlock * blockSize
-      val endTestIndex = startTestIndex + blockSize
-
-      val testFeatures = newFeatures(startTestIndex until endTestIndex, ::)
-      val trainFeaturesCV = newFeatures.delete(startTestIndex until endTestIndex, Axis._0)
-      val testTarget = shuffledTarget(startTestIndex until endTestIndex)
-      val trainTarget = new DenseVector[Double](
-        Range(0, shuffledTarget.length)
-          .filter(index => index < startTestIndex || index >= endTestIndex)
-          .map(index => shuffledTarget(index))
-          .toArray
-      )
-
-      var regression = new LinearRegression()
-
-      regression.fit(trainFeaturesCV, trainTarget)
-
-      val predictedTarget = regression.predict(trainFeaturesCV)
-
-      val trainError = Metrics.MSE(trainTarget, predictedTarget)
-      logger.info(f"MSE error on train ${trainError}")
-
-      val predictedTest = regression.predict(testFeatures)
-
-      val testError = Metrics.MSE(testTarget, predictedTest)
-
-      logger.info(f"MSE error on test ${testError}")
-
-    }
-
-    logger.info("Train on full data")
-    var finalModel = new LinearRegression()
-
-    finalModel.fit(trainFeatures, target)
-
-    return finalModel;
-
-  }
-}
-
-object FeaturePreprocessing {
-  def splitFeatureTarget(
-      featuresTarget: DenseMatrix[Double]
-  ): (DenseMatrix[Double], DenseVector[Double]) = {
-    return (featuresTarget(::, 0 until featuresTarget.cols - 1), featuresTarget(::, -1))
-  }
-}
-
-object Metrics {
-  def MSE(trueValues: DenseVector[Double], predictedValues: DenseVector[Double]): Double = {
-    return math.sqrt((trueValues - predictedValues).map(x => x * x).sum)
-  }
+object Constants {
+  val NUM_CORES: Int = 2
 }
 
 object Main extends App {
@@ -99,36 +21,51 @@ object Main extends App {
 
     return optIndex
   }
-//
-//  def readMatrix(filepath: String): DenseMatrix[Double] = {
-//    return csvread(new File(filepath), skipLines = 1)
-//  }
 
-//  if (args.length != 8) {
-//    println(
-//      "Please specify arguments as --train file --test file --out path_to_out --true path_to_true_values"
-//    )
-//    java.lang.System.exit(1)
-//  }
-
-  var logger = Logger("linreg")
+  var logger = Logger("main")
 
   val spark = SparkSession.builder
-    .appName("Word count")
-    .config("spark.driver.cores", 2)
-    .config("spark.driver.memory", 6)
-    .master("local[2]")
+    .appName("Linear regression")
+    .master(s"local[${Constants.NUM_CORES}]")
     .getOrCreate()
 
-  val data = spark.sparkContext.parallelize(
-    Seq("I like Spark", "Spark is awesome", "My first Spark job is working now and is counting these words"))
+  import spark.sqlContext.implicits._
 
-  val wordCounts = data
-    .flatMap(row => row.split(" "))
-    .map(word => (word, 1))
-    .reduceByKey(_ + _)
+  val generator = RandBasis.withSeed(124)
 
-  wordCounts.foreach(println)
+  val features = DenseMatrix.rand[Double](100000, 3, rand = generator.uniform)
+  val trueCoeff = DenseVector(1.5, 0.3, -0.7).asDenseMatrix.t
+  val target = (features * trueCoeff).toDenseVector
+
+  val featuresWitTarget = Range(0, features.rows)
+    .map(index => Tuple2(Vectors.fromBreeze(features(index, ::).t), target(index)))
+    .toSeq
+    .toDF("features", "label")
+
+  var model = new LinearRegression()
+    .setNumIter(5000)
+    .setLearningRate(1)
+    .setEps(1e-6)
+    .setPrintEvery(100)
+    .setOutputCol("target")
+  var trainedModel = model.fit(featuresWitTarget)
+
+  var predicted = trainedModel.transform(featuresWitTarget)
+
+  predicted =
+    predicted.withColumn("abs_diff", functions.abs(predicted("target") - predicted("label")))
+  val maxAbsDiff = predicted.select(functions.max(predicted("abs_diff"))).first()
+
+  logger.info(f"Max abs diff: ${maxAbsDiff}")
+
+  trueCoeff.toDenseVector.mapPairs((index, value) =>
+    logger.info(
+      f"true_value_${index + 1}%-4d = ${value}%-18f est_value_${index + 1}%-4d = ${trainedModel.modelCoeff(index)}%-18f"
+    )
+  )
+  logger.info(
+    f"true_b = ${0.0}%-18f est_b = ${trainedModel.modelCoeff(trainedModel.modelCoeff.size - 1)}%-18f"
+  )
 
   spark.stop()
 }
