@@ -19,7 +19,11 @@
 
 ## Реализация
 
+### Основное задание
+
 [Реализация LSH](src/main/scala/org/apache/spark/ml/made/CosineRandomHyperplanesLSH.scala)
+
+### Дополнительное задание
 
 [Подбор числа гиперплоскостей и порога](report/main.log)
 
