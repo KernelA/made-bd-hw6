@@ -1,58 +1,59 @@
 package org.apache.spark.ml.made
 
-import breeze.linalg.{DenseMatrix, DenseVector, sum}
+import scala.util.Random
+import breeze.linalg.{DenseMatrix, DenseVector}
 import com.typesafe.scalalogging.Logger
-import org.apache.spark.ml.attribute.AttributeGroup
-import org.apache.spark.ml.feature.{LSH, LSHModel, VectorAssembler}
-import org.apache.spark.ml.{Estimator, Model}
-import breeze.stats.distributions.{Rand, RandBasis}
+import org.apache.spark.ml.feature.{LSH, LSHModel, LSHParams}
 import org.apache.spark.ml.linalg.{Vector, VectorUDT, Vectors}
-import org.apache.spark.ml.param.{DoubleParam, IntParam, Param, ParamMap}
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol, HasOutputCol, HasSeed}
+import org.apache.spark.ml.param.{IntParam, LongParam, ParamMap, ParamValidators}
+import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasInputCol, HasLabelCol, HasOutputCol, HasSeed}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsReader, DefaultParamsWritable, DefaultParamsWriter, Identifiable, MLReadable, MLReader, MLWritable, MLWriter, SchemaUtils}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{DataFrame, Dataset, Encoder}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DataTypes, StructType}
 
 object RandomHyperplanesLSHPConstants {
   val RELATIVE_PATH = "/coeff"
   val EPS = 1e-9
 }
 
-trait RandomHyperplanesLSHParams extends HasFeaturesCol {
+trait CosineRandomHyperplanesLSHParams extends LSHParams {
+  val seed: LongParam = new LongParam(this, "seed", "A random seed", ParamValidators.gtEq(0L))
 
-  val numBits = new IntParam(this, "learningRate", "The number of bits in the hash")
+  def setSeed(value: Long): this.type = set(seed, value)
 
-  def getNumBits(): Int = $(numBits)
+  def getSeed: Long = $(seed)
 
-  def setNumBits(value: Int): this.type = set(numBits, value)
+  setDefault(seed -> 123L)
 
-  def setFeaturesCol(value: String): this.type = set(featuresCol, value)
-
+  protected def customValidateAndTransformSchema(schema: StructType): StructType = {
+    if (schema.fieldNames.contains($(outputCol))) {
+      SchemaUtils.checkColumnType(schema, getOutputCol, new VectorUDT())
+      schema
+    } else {
+      SchemaUtils.appendColumn(schema, $(outputCol), DataTypes.createArrayType(new VectorUDT))
+    }
+  }
 }
 
-class RandomHyperplanesLSHModel private[made] (
+class CosineRandomHyperplanesLSHModel private[made](
     override val uid: String,
     val randNormals: DenseMatrix[Double]
-) extends LSHModel[RandomHyperplanesLSHModel]
-    with RandomHyperplanesLSHParams
-    with MLWritable {
+) extends LSHModel[CosineRandomHyperplanesLSHModel]
+    with MLWritable with CosineRandomHyperplanesLSHParams {
 
   private[made] def this(randNormals: DenseMatrix[Double]) =
-    this(Identifiable.randomUID("randomHyperplanesLSHModel"), randNormals)
+    this(Identifiable.randomUID("cosineRandomHyperplanesLSHModel"), randNormals)
 
-  override def copy(extra: ParamMap): RandomHyperplanesLSHModel =
-    copyValues(new RandomHyperplanesLSHModel(randNormals), extra)
-
-  //  override def hashFunction(elems: Vector): Array[Vector] = {
-//    elems.
-//  }
+  override def copy(extra: ParamMap): CosineRandomHyperplanesLSHModel =
+    copyValues(new CosineRandomHyperplanesLSHModel(randNormals), extra)
 
   override def hashFunction(elems: Vector): Array[Vector] = {
-    val binHash = (randNormals * elems.asBreeze.toDenseVector.asDenseMatrix.t)
-      .map(value => if (value > 0) 1.0 else 0.0)
-      .toDenseVector
-    Array(Vectors.fromBreeze(binHash))
+    val row = elems.asBreeze.toDenseVector.asDenseMatrix.t
+    val binHash = randNormals * (elems.asBreeze.toDenseVector.asDenseMatrix.t)
+
+    val newbinHash = binHash.map(value => if (value > 0) 1.0 else 0.0)
+    Range(0, randNormals.rows).map(index => Vectors.fromBreeze(binHash(index, ::).t)).toArray
   }
 
   override def hashDistance(x: Seq[Vector], y: Seq[Vector]): Double = {
@@ -62,7 +63,7 @@ class RandomHyperplanesLSHModel private[made] (
       .map(vectorPair =>
         vectorPair._1.toArray.zip(vectorPair._2.toArray).count(pair => pair._1 != pair._2)
       )
-      .max
+      .sum
   }
 
   override def keyDistance(x: Vector, y: Vector): Double = {
@@ -72,7 +73,7 @@ class RandomHyperplanesLSHModel private[made] (
     1.0 - x.dot(y) / (norm1 * norm2)
   }
 
-  override def transformSchema(schema: StructType): StructType = validateAndTransformSchema(schema)
+  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(schema)
 
   override def write: MLWriter = new DefaultParamsWriter(this) {
     override protected def saveImpl(path: String): Unit = {
@@ -87,27 +88,70 @@ class RandomHyperplanesLSHModel private[made] (
         .parquet(path + RandomHyperplanesLSHPConstants.RELATIVE_PATH)
     }
   }
-}
-
-class RandomHyperplanesLSH(override  val uid: String) extends  LSH with RandomHyperplanesLSHParams with DefaultParamsWritable {
-  def this() = this(Identifiable.randomUID("randomHyperPlaneLSH"))
-
-    override def copy(extra: ParamMap): LSH[RandomHyperplanesLSH] = defaultCopy(extra)
-
-    override def transformSchema(schema: StructType): StructType = validateAndTransformSchema(schema)
-
-    override def createRawLSHModel(inputDim: Int): RandomHyperplanesLSHModel {
-      require(inputDim <= MinHashLSH.HASH_PRIME,
-      s"The input vector dimension $inputDim exceeds the threshold ${MinHashLSH.HASH_PRIME}.")
-      val rand = new Random($(seed))
-      val randCoefs: Array[(Int, Int)] = Array.fill($(numHashTables)) {
-      (1 + rand.nextInt(MinHashLSH.HASH_PRIME - 1), rand.nextInt(MinHashLSH.HASH_PRIME - 1))
-    }
-    }
 
 }
 
+class CosineRandomHyperplanesLSH(override val uid: String)
+    extends LSH[CosineRandomHyperplanesLSHModel] with CosineRandomHyperplanesLSHParams
+    with DefaultParamsWritable {
 
+  def this() = this(Identifiable.randomUID("cosineRandomHyperPlaneLSH"))
+
+  override def setNumHashTables(value: Int): this.type = super.setNumHashTables(value)
+
+  override def copy(extra: ParamMap): CosineRandomHyperplanesLSH = defaultCopy(extra)
+
+  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(schema)
+
+  override def createRawLSHModel(inputDim: Int): CosineRandomHyperplanesLSHModel = {
+    val rand = new Random(getSeed)
+
+    val randHyperPlanes = Array
+      .fill($(numHashTables)) {
+        Array.fill(inputDim)({ if (rand.nextDouble() > 0.5) 1.0 else -1.0 })
+      }
+      .flatten
+
+    val randNormals = DenseMatrix.create(
+      $(numHashTables),
+      inputDim,
+      randHyperPlanes,
+      0,
+      inputDim,
+      isTranspose = true
+    )
+    new CosineRandomHyperplanesLSHModel(randNormals)
+  }
+}
+
+object CosineRandomHyperplanesLSH extends DefaultParamsReadable[CosineRandomHyperplanesLSH]
+
+object CosineRandomHyperplanesLSHModel extends MLReadable[CosineRandomHyperplanesLSHModel] {
+  override def read: MLReader[CosineRandomHyperplanesLSHModel] = new MLReader[CosineRandomHyperplanesLSHModel] {
+
+    override def load(path: String): CosineRandomHyperplanesLSHModel = {
+      val metadata = DefaultParamsReader.loadMetadata(path, sc)
+
+      val normalsDt = sqlContext.read.parquet(path + RandomHyperplanesLSHPConstants.RELATIVE_PATH)
+
+      // Used to convert untyped dataframes to datasets with vectors
+      implicit val encoder: Encoder[Vector] = ExpressionEncoder()
+
+      val rows = normalsDt.count().toInt
+
+      val randNormals =
+        normalsDt.select(normalsDt("_1").as[Vector]).collect().map(vector => vector.toArray)
+
+      val cols = randNormals(0).size
+
+      val matrix =
+        DenseMatrix.create[Double](rows, cols, randNormals.flatten, 0, cols, isTranspose = true)
+      val model = new CosineRandomHyperplanesLSHModel(matrix)
+      metadata.getAndSetParams(model)
+      model
+    }
+  }
+}
 
 //class LinearRegression(override val uid: String)
 //    extends Estimator[LinearRegressionModel]
