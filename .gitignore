@@ -15,3 +15,4 @@ target/
 train_log/
 !report/main.log
 !report/test.log
+data/tripadvisor_hotel_reviews.csv

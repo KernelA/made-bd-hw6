@@ -1,27 +1,33 @@
-# HW 5 Spark Линейная регрессия на Scala
+# HW 6 Spark Random Hyperplanes LSH
 
+Реализовать Random Hyperplanes LSH (для косинусного расстояния) в виде Spark Estimator:
 
+1. Посмотреть как устроены MinHashLSH и BucketedRandomProjectionLSH в Spark
+2. Унаследоваться от LSHModel и LSH
+3. Определить недостающие методы для модели (hashFunction, hashDistance keyDistance, write) и для LSH (createRawLSHModel, copy, transformSchema)
 
-[Описание задания (129 слайд)](https://github.com/netcitizenrus/MADE_BigData_2021/blob/540e164ecc574b52ca6ffa40636b8728af28aa80/SparkML/Distiributed.pdf)
+Дополнительное задание (30 баллов):
 
+1. Сделать предсказания (на тех же данных и фичах: HashingTf-Idf)
+2. Подобрать количество гиперплоскостей и трешхолд по расстоянию
 
-## Результат работы
-
-[Логи обучения](report/main.log)
-
-## Резлультаты запуска тестов
-
-[Лог](report/test.log)
+## Результат запуска тестов
 
 Также тесты запускаются в GitHub Actions. См. badge ниже со статусом:
 
-[![CI](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml)
+[![CI](https://github.com/KernelA/made-bd-hw6/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw6/actions/workflows/test.yaml)
 
 ## Реализация
 
-[Реализация линейной регрессии](src/main/scala/org/apache/spark/ml/made/LinearRegression.scala)
+[Реализация LSH](src/main/scala/org/apache/spark/ml/made/CosineRandomHyperplanesLSH.scala)
+
+[Подбор числа гиперплоскостей и порога](report/main.log)
 
 ## Как запустить:
+
+[Скачать данные c Kaggle](https://www.kaggle.com/andrewmvd/trip-advisor-hotel-reviews)
+
+Разархивировать и положить в `data`.
 
 Установить SBЕ и Java.
 
