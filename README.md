@@ -15,11 +15,11 @@
 
 Также тесты запускаются в GitHub Actions. См. badge ниже со статусом:
 
-[![CI](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw5/actions/workflows/test.yaml)
+[![CI](https://github.com/KernelA/made-bd-hw6/actions/workflows/test.yaml/badge.svg)](https://github.com/KernelA/made-bd-hw6/actions/workflows/test.yaml)
 
 ## Реализация
 
-[Реализация линейной регрессии](src/main/scala/org/apache/spark/ml/made/CosineRandomHyperplanesLSH.scala)
+[Реализация LSH](src/main/scala/org/apache/spark/ml/made/CosineRandomHyperplanesLSH.scala)
 
 ## Как запустить:
 
