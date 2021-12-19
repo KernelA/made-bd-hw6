@@ -4,6 +4,7 @@ import breeze.linalg._
 import breeze.stats.distributions.RandBasis
 import com.typesafe.scalalogging.Logger
 import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.ml.feature.{MinHashLSH, BucketedRandomProjectionLSH}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
@@ -42,30 +43,30 @@ object Main extends App {
     .toSeq
     .toDF("features", "label")
 
-  var model = new LinearRegression()
-    .setNumIter(5000)
-    .setLearningRate(1)
-    .setEps(1e-6)
-    .setPrintEvery(100)
-    .setOutputCol("target")
-  var trainedModel = model.fit(featuresWitTarget)
-
-  var predicted = trainedModel.transform(featuresWitTarget)
-
-  predicted =
-    predicted.withColumn("abs_diff", functions.abs(predicted("target") - predicted("label")))
-  val maxAbsDiff = predicted.select(functions.max(predicted("abs_diff"))).first()
-
-  logger.info(f"Max abs diff: ${maxAbsDiff}")
-
-  trueCoeff.toDenseVector.mapPairs((index, value) =>
-    logger.info(
-      f"true_value_${index + 1}%-4d = ${value}%-18f est_value_${index + 1}%-4d = ${trainedModel.modelCoeff(index)}%-18f"
-    )
-  )
-  logger.info(
-    f"true_b = ${0.0}%-18f est_b = ${trainedModel.modelCoeff(trainedModel.modelCoeff.size - 1)}%-18f"
-  )
+//  var model = new LinearRegression()
+//    .setNumIter(5000)
+//    .setLearningRate(1)
+//    .setEps(1e-6)
+//    .setPrintEvery(100)
+//    .setOutputCol("target")
+//  var trainedModel = model.fit(featuresWitTarget)
+//
+//  var predicted = trainedModel.transform(featuresWitTarget)
+//
+//  predicted =
+//    predicted.withColumn("abs_diff", functions.abs(predicted("target") - predicted("label")))
+//  val maxAbsDiff = predicted.select(functions.max(predicted("abs_diff"))).first()
+//
+//  logger.info(f"Max abs diff: ${maxAbsDiff}")
+//
+//  trueCoeff.toDenseVector.mapPairs((index, value) =>
+//    logger.info(
+//      f"true_value_${index + 1}%-4d = ${value}%-18f est_value_${index + 1}%-4d = ${trainedModel.modelCoeff(index)}%-18f"
+//    )
+//  )
+//  logger.info(
+//    f"true_b = ${0.0}%-18f est_b = ${trainedModel.modelCoeff(trainedModel.modelCoeff.size - 1)}%-18f"
+//  )
 
   spark.stop()
 }

@@ -19,7 +19,7 @@
 
 ## Реализация
 
-[Реализация линейной регрессии](src/main/scala/org/apache/spark/ml/made/LinearRegression.scala)
+[Реализация линейной регрессии](src/main/scala/org/apache/spark/ml/made/RandomHyperplanesLSH.scala)
 
 ## Как запустить:
 
