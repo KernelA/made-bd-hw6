@@ -1,70 +1,110 @@
 package org.apache.spark.ml.made
 
-import breeze.linalg._
-import breeze.stats.distributions.RandBasis
+import org.apache.spark.ml.linalg
 import com.typesafe.scalalogging.Logger
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{DataFrame, SparkSession, functions}
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.{Pipeline}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.ml.feature.{HashingTF, IDF, RegexTokenizer}
+import org.apache.spark.sql.functions
+import org.apache.spark.sql.functions.{monotonically_increasing_id}
 
 object Constants {
   val NUM_CORES: Int = 2
 }
 
 object Main extends App {
-  def findOpt(args: Array[String], optName: String): Int = {
-    val optIndex = args.indexOf(optName)
-    if (optIndex == -1) {
-      println(f"Cannot find required arg ${optName}")
-      java.lang.System.exit(1)
-    }
-
-    return optIndex
-  }
-
   var logger = Logger("main")
 
   val spark = SparkSession.builder
-    .appName("Linear regression")
+    .appName("RandomLSH")
     .master(s"local[${Constants.NUM_CORES}]")
     .getOrCreate()
 
-  import spark.sqlContext.implicits._
+  val numFeatures = 1000
 
-  val generator = RandBasis.withSeed(124)
-
-  val features = DenseMatrix.rand[Double](100000, 3, rand = generator.uniform)
-  val trueCoeff = DenseVector(1.5, 0.3, -0.7).asDenseMatrix.t
-  val target = (features * trueCoeff).toDenseVector
-
-  val featuresWitTarget = Range(0, features.rows)
-    .map(index => Tuple2(Vectors.fromBreeze(features(index, ::).t), target(index)))
-    .toSeq
-    .toDF("features", "label")
-
-  var model = new LinearRegression()
-    .setNumIter(5000)
-    .setLearningRate(1)
-    .setEps(1e-6)
-    .setPrintEvery(100)
-    .setOutputCol("target")
-  var trainedModel = model.fit(featuresWitTarget)
-
-  var predicted = trainedModel.transform(featuresWitTarget)
-
-  predicted =
-    predicted.withColumn("abs_diff", functions.abs(predicted("target") - predicted("label")))
-  val maxAbsDiff = predicted.select(functions.max(predicted("abs_diff"))).first()
-
-  logger.info(f"Max abs diff: ${maxAbsDiff}")
-
-  trueCoeff.toDenseVector.mapPairs((index, value) =>
-    logger.info(
-      f"true_value_${index + 1}%-4d = ${value}%-18f est_value_${index + 1}%-4d = ${trainedModel.modelCoeff(index)}%-18f"
+  val preprocessingPipe = new Pipeline()
+    .setStages(
+      Array(
+        new RegexTokenizer()
+          .setInputCol("Review")
+          .setOutputCol("tokenized")
+          .setPattern("\\W+"),
+        new HashingTF()
+          .setInputCol("tokenized")
+          .setOutputCol("tf")
+          .setBinary(true)
+          .setNumFeatures(numFeatures),
+        new HashingTF()
+          .setInputCol("tokenized")
+          .setOutputCol("tf2")
+          .setNumFeatures(numFeatures),
+        new IDF()
+          .setInputCol("tf2")
+          .setOutputCol("tfidf")
+      )
     )
-  )
-  logger.info(
-    f"true_b = ${0.0}%-18f est_b = ${trainedModel.modelCoeff(trainedModel.modelCoeff.size - 1)}%-18f"
+
+  val dataset = spark.read
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("sep", ",")
+    .csv("./data/tripadvisor_hotel_reviews.csv").sample(0.3)
+
+  val trainSize = 0.8
+
+  val Array(train, test) = dataset.randomSplit(Array(trainSize, 1 - trainSize), 0)
+
+  val pipe = preprocessingPipe.fit(train)
+  val trainFeatures = pipe.transform(train).cache()
+  val testFeatures = pipe.transform(test)
+
+  dataset.drop("Review")
+  trainFeatures.drop("tokenized", "Review", "tf2", "tf")
+  testFeatures.drop("tokenized", "Review", "tf2", "tf")
+
+  val testFeaturesWithIndex = testFeatures.withColumn("id", monotonically_increasing_id()).cache()
+
+  val metrics = new RegressionEvaluator()
+    .setLabelCol("Rating")
+    .setPredictionCol("predict")
+    .setMetricName("rmse")
+
+  val results = Seq(10, 20, 30).map(numHashes =>
+    Seq(0.5, 0.7, 0.8).map(distance => {
+      val cosineLSHModel = new CosineRandomHyperplanesLSH()
+        .setInputCol("tfidf")
+        .setOutputCol("hash")
+        .setNumHashTables(numHashes)
+        .setSeed(0)
+        .fit(trainFeatures)
+
+      val neighbors =
+        cosineLSHModel.approxSimilarityJoin(trainFeatures, testFeaturesWithIndex, distance)
+
+      val predictions = neighbors
+        .withColumn("similarity", functions.col("distCol"))
+        .groupBy("datasetB.id")
+        .agg(
+          (functions.sum(functions.col("similarity") * functions.col("datasetA.Rating")) / functions
+            .sum(functions.col("similarity"))).as("predict"),
+          functions.count("datasetA.Rating").as("numNeighbors")
+        )
+
+      val forMetric = testFeaturesWithIndex.join(predictions, Seq("id"))
+
+      val meanNumNeighbors = forMetric.select(functions.avg("numNeighbors")).collect.head(0)
+
+      logger.info("Compute mean neighbors")
+
+      val metric = metrics.evaluate(forMetric)
+
+      val res = (numHashes, metric, meanNumNeighbors)
+      logger.info(
+        s"Num hashes: ${numHashes} Distance: ${distance} RMSE: ${metric} Mean num neighbours: ${meanNumNeighbors}"
+      )
+      res
+    })
   )
 
   spark.stop()
