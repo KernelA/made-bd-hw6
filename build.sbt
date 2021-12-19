@@ -12,7 +12,7 @@ scalaVersion := "2.12.12"
 
 // It's possible to define many kinds of settings, such as:
 
-name := "lin-reg"
+name := "cosine-rand-lsh"
 version := "1.0"
 
 // Note, it's not required for you to define these three settings. These are

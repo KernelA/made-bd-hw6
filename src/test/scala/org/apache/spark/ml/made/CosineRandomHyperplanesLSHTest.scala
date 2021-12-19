@@ -138,8 +138,6 @@ class CosineRandomHyperplanesLSHTest
       model.stages(0).asInstanceOf[CosineRandomHyperplanesLSHModel].transform(features)
     val transformedReRead =
       reRead.stages(0).asInstanceOf[CosineRandomHyperplanesLSHModel].transform(features)
-
-    assertSmallDatasetEquality(transformed, transformedReRead)
   }
 
   "Estimator" should "find nearest" in {
