@@ -21,7 +21,13 @@
 
 [Реализация LSH](src/main/scala/org/apache/spark/ml/made/CosineRandomHyperplanesLSH.scala)
 
+[Подбор числа гиперплоскостей и порога](report/main.log)
+
 ## Как запустить:
+
+[Скачать данные c Kaggle](https://www.kaggle.com/andrewmvd/trip-advisor-hotel-reviews)
+
+Разархивировать и положить в `data`.
 
 Установить SBЕ и Java.
 

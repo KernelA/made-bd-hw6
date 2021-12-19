@@ -1,13 +1,30 @@
 package org.apache.spark.ml.made
 
 import scala.util.Random
-import breeze.linalg.{DenseMatrix, DenseVector}
+import breeze.linalg.{DenseMatrix, DenseVector, SparseVector}
 import com.typesafe.scalalogging.Logger
 import org.apache.spark.ml.feature.{LSH, LSHModel, LSHParams}
 import org.apache.spark.ml.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.ml.param.{IntParam, LongParam, ParamMap, ParamValidators}
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasInputCol, HasLabelCol, HasOutputCol, HasSeed}
-import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsReader, DefaultParamsWritable, DefaultParamsWriter, Identifiable, MLReadable, MLReader, MLWritable, MLWriter, SchemaUtils}
+import org.apache.spark.ml.param.shared.{
+  HasFeaturesCol,
+  HasInputCol,
+  HasLabelCol,
+  HasOutputCol,
+  HasSeed
+}
+import org.apache.spark.ml.util.{
+  DefaultParamsReadable,
+  DefaultParamsReader,
+  DefaultParamsWritable,
+  DefaultParamsWriter,
+  Identifiable,
+  MLReadable,
+  MLReader,
+  MLWritable,
+  MLWriter,
+  SchemaUtils
+}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.{DataFrame, Dataset, Encoder}
 import org.apache.spark.sql.types.{DataTypes, StructType}
@@ -36,11 +53,12 @@ trait CosineRandomHyperplanesLSHParams extends LSHParams {
   }
 }
 
-class CosineRandomHyperplanesLSHModel private[made](
+class CosineRandomHyperplanesLSHModel private[made] (
     override val uid: String,
     val randNormals: DenseMatrix[Double]
 ) extends LSHModel[CosineRandomHyperplanesLSHModel]
-    with MLWritable with CosineRandomHyperplanesLSHParams {
+    with MLWritable
+    with CosineRandomHyperplanesLSHParams {
 
   private[made] def this(randNormals: DenseMatrix[Double]) =
     this(Identifiable.randomUID("cosineRandomHyperplanesLSHModel"), randNormals)
@@ -49,10 +67,9 @@ class CosineRandomHyperplanesLSHModel private[made](
     copyValues(new CosineRandomHyperplanesLSHModel(randNormals), extra)
 
   override def hashFunction(elems: Vector): Array[Vector] = {
-    val row = elems.asBreeze.toDenseVector.asDenseMatrix.t
-    val binHash = randNormals * (elems.asBreeze.toDenseVector.asDenseMatrix.t)
-
-    val newbinHash = binHash.map(value => if (value > 0) 1.0 else 0.0)
+    val binHash = (randNormals * elems.asBreeze.toDenseVector.asDenseMatrix.t).map(value =>
+      if (value > 0) 1.0 else 0.0
+    )
     Range(0, randNormals.rows).map(index => Vectors.fromBreeze(binHash(index, ::).t)).toArray
   }
 
@@ -73,7 +90,9 @@ class CosineRandomHyperplanesLSHModel private[made](
     1.0 - x.dot(y) / (norm1 * norm2)
   }
 
-  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(schema)
+  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(
+    schema
+  )
 
   override def write: MLWriter = new DefaultParamsWriter(this) {
     override protected def saveImpl(path: String): Unit = {
@@ -92,7 +111,8 @@ class CosineRandomHyperplanesLSHModel private[made](
 }
 
 class CosineRandomHyperplanesLSH(override val uid: String)
-    extends LSH[CosineRandomHyperplanesLSHModel] with CosineRandomHyperplanesLSHParams
+    extends LSH[CosineRandomHyperplanesLSHModel]
+    with CosineRandomHyperplanesLSHParams
     with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("cosineRandomHyperPlaneLSH"))
@@ -101,7 +121,9 @@ class CosineRandomHyperplanesLSH(override val uid: String)
 
   override def copy(extra: ParamMap): CosineRandomHyperplanesLSH = defaultCopy(extra)
 
-  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(schema)
+  override def transformSchema(schema: StructType): StructType = customValidateAndTransformSchema(
+    schema
+  )
 
   override def createRawLSHModel(inputDim: Int): CosineRandomHyperplanesLSHModel = {
     val rand = new Random(getSeed)
@@ -127,30 +149,31 @@ class CosineRandomHyperplanesLSH(override val uid: String)
 object CosineRandomHyperplanesLSH extends DefaultParamsReadable[CosineRandomHyperplanesLSH]
 
 object CosineRandomHyperplanesLSHModel extends MLReadable[CosineRandomHyperplanesLSHModel] {
-  override def read: MLReader[CosineRandomHyperplanesLSHModel] = new MLReader[CosineRandomHyperplanesLSHModel] {
+  override def read: MLReader[CosineRandomHyperplanesLSHModel] =
+    new MLReader[CosineRandomHyperplanesLSHModel] {
 
-    override def load(path: String): CosineRandomHyperplanesLSHModel = {
-      val metadata = DefaultParamsReader.loadMetadata(path, sc)
+      override def load(path: String): CosineRandomHyperplanesLSHModel = {
+        val metadata = DefaultParamsReader.loadMetadata(path, sc)
 
-      val normalsDt = sqlContext.read.parquet(path + RandomHyperplanesLSHPConstants.RELATIVE_PATH)
+        val normalsDt = sqlContext.read.parquet(path + RandomHyperplanesLSHPConstants.RELATIVE_PATH)
 
-      // Used to convert untyped dataframes to datasets with vectors
-      implicit val encoder: Encoder[Vector] = ExpressionEncoder()
+        // Used to convert untyped dataframes to datasets with vectors
+        implicit val encoder: Encoder[Vector] = ExpressionEncoder()
 
-      val rows = normalsDt.count().toInt
+        val rows = normalsDt.count().toInt
 
-      val randNormals =
-        normalsDt.select(normalsDt("_1").as[Vector]).collect().map(vector => vector.toArray)
+        val randNormals =
+          normalsDt.select(normalsDt("_1").as[Vector]).collect().map(vector => vector.toArray)
 
-      val cols = randNormals(0).size
+        val cols = randNormals(0).size
 
-      val matrix =
-        DenseMatrix.create[Double](rows, cols, randNormals.flatten, 0, cols, isTranspose = true)
-      val model = new CosineRandomHyperplanesLSHModel(matrix)
-      metadata.getAndSetParams(model)
-      model
+        val matrix =
+          DenseMatrix.create[Double](rows, cols, randNormals.flatten, 0, cols, isTranspose = true)
+        val model = new CosineRandomHyperplanesLSHModel(matrix)
+        metadata.getAndSetParams(model)
+        model
+      }
     }
-  }
 }
 
 //class LinearRegression(override val uid: String)

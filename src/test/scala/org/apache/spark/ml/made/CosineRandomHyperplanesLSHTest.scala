@@ -11,18 +11,17 @@ import com.google.common.io.Files
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import com.github.mrpowers.spark.fast.tests.DatasetComparer
 
-
 class CosineRandomHyperplanesLSHTest
     extends AnyFlatSpec
     with should.Matchers
-    with WithSpark with DatasetComparer  {
+    with WithSpark
+    with DatasetComparer {
 
   lazy val features: DataFrame = CosineRandomHyperplanesLSHTest._featuresDt
 
   lazy val model: DenseVector[Double] = CosineRandomHyperplanesLSHTest._model
 
   lazy val randNormals = CosineRandomHyperplanesLSHTest._randNormals
-
 
   "Dataframe" should "contains" in {
     features.schema.fieldNames.exists(col => col == "features") should be(true)
@@ -73,7 +72,8 @@ class CosineRandomHyperplanesLSHTest
 
   "Model" should "compute hash" in {
     val model: CosineRandomHyperplanesLSHModel =
-      new CosineRandomHyperplanesLSHModel(randNormals).setInputCol("features")
+      new CosineRandomHyperplanesLSHModel(randNormals)
+        .setInputCol("features")
         .setOutputCol("hash")
 
     val vectors: Array[Vector] =
@@ -83,7 +83,10 @@ class CosineRandomHyperplanesLSHTest
   }
 
   "Estimator" should "should parameters" in {
-    val estimator = new CosineRandomHyperplanesLSH().setNumHashTables(10).setInputCol("features").setOutputCol("hash")
+    val estimator = new CosineRandomHyperplanesLSH()
+      .setNumHashTables(10)
+      .setInputCol("features")
+      .setOutputCol("hash")
     val model = estimator.fit(features)
     model.isInstanceOf[CosineRandomHyperplanesLSHModel] should be(true)
   }
@@ -93,7 +96,10 @@ class CosineRandomHyperplanesLSHTest
     val numHashTables = 10
     val pipeline = new Pipeline().setStages(
       Array(
-        new CosineRandomHyperplanesLSH().setInputCol("features").setOutputCol("hash").setNumHashTables(numHashTables)
+        new CosineRandomHyperplanesLSH()
+          .setInputCol("features")
+          .setOutputCol("hash")
+          .setNumHashTables(numHashTables)
       )
     )
 
@@ -115,10 +121,11 @@ class CosineRandomHyperplanesLSHTest
     val pipeline = new Pipeline().setStages(
       Array(
         new CosineRandomHyperplanesLSH()
-          .setInputCol("features").setOutputCol("hash").setNumHashTables(numHashTables)
+          .setInputCol("features")
+          .setOutputCol("hash")
+          .setNumHashTables(numHashTables)
       )
     )
-
     val model = pipeline.fit(features)
 
     val tmpFolder = Files.createTempDir()
@@ -136,7 +143,10 @@ class CosineRandomHyperplanesLSHTest
   }
 
   "Estimator" should "find nearest" in {
-    val estimator = new CosineRandomHyperplanesLSH().setNumHashTables(10).setInputCol("features").setOutputCol("hash")
+    val estimator = new CosineRandomHyperplanesLSH()
+      .setNumHashTables(10)
+      .setInputCol("features")
+      .setOutputCol("hash")
     val model = estimator.fit(features)
     val key = features.select(features("features")).first().getAs[Vector](0)
 

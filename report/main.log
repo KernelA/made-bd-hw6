@@ -1,8 +1,18 @@
-00:44:24.189 - Iter 0 / 5000 Squared norm of the gradient: 10388.356438354214
-00:45:02.021 - Iter 100 / 5000 Squared norm of the gradient: 2.6712615926522234E-4
-00:45:29.003 - Iter 200 / 5000 Squared norm of the gradient: 1.0744369444251852E-8
-00:45:54.626 - Max abs diff: [4.074073193735539E-8]
-00:45:54.628 - true_value_1    = 1.500000           est_value_1    = 1.500000          
-00:45:54.629 - true_value_2    = 0.300000           est_value_2    = 0.300000          
-00:45:54.630 - true_value_3    = -0.700000          est_value_3    = -0.700000         
-00:45:54.630 - true_b = 0.000000           est_b = 0.000000          
+00:57:15.639 - Compute mean neighbors
+00:58:45.919 - Num hashes: 10 Distance: 0.5 RMSE: 1.1405518266525543 Mean num neighbours: 12.045454545454545
+01:00:20.929 - Compute mean neighbors
+01:02:03.062 - Num hashes: 10 Distance: 0.7 RMSE: 1.2497374032560586 Mean num neighbours: 14.967557251908397
+01:05:03.496 - Compute mean neighbors
+01:08:32.374 - Num hashes: 10 Distance: 0.8 RMSE: 1.096291043079141 Mean num neighbours: 84.94369547977796
+01:11:21.003 - Compute mean neighbors
+01:13:57.802 - Num hashes: 20 Distance: 0.5 RMSE: 1.1405518266525547 Mean num neighbours: 12.045454545454545
+01:17:36.000 - Compute mean neighbors
+01:20:53.072 - Num hashes: 20 Distance: 0.7 RMSE: 1.2497374032560586 Mean num neighbours: 14.967557251908397
+01:26:22.134 - Compute mean neighbors
+01:31:56.458 - Num hashes: 20 Distance: 0.8 RMSE: 1.0963214431008856 Mean num neighbours: 84.96669310071371
+01:35:48.468 - Compute mean neighbors
+01:39:36.422 - Num hashes: 30 Distance: 0.5 RMSE: 1.1405518266525543 Mean num neighbours: 12.045454545454545
+01:43:35.120 - Compute mean neighbors
+01:47:57.245 - Num hashes: 30 Distance: 0.7 RMSE: 1.2497374032560586 Mean num neighbours: 14.967557251908397
+01:53:55.965 - Compute mean neighbors
+02:00:22.079 - Num hashes: 30 Distance: 0.8 RMSE: 1.0963214431008856 Mean num neighbours: 84.96669310071371
